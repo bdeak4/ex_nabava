@@ -53,10 +53,9 @@ defmodule ExNabava do
                homepage: s["homepage"],
                emails:
                  if s["locations"] do
-                   Enum.filter_map(
-                     s["locations"],
-                     fn l -> l["email"] != nil end,
-                     fn l -> l["email"] end
+                   Enum.filter(
+                     Enum.map(s["locations"], fn l -> l["email"] end),
+                     fn e -> e != nil end
                    )
                  else
                    []
