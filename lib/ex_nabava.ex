@@ -3,6 +3,12 @@ defmodule ExNabava do
   Documentation for `ExNabava`.
   """
 
+  @doc """
+  ...
+  """
+  def store_products() do
+  end
+
   # Raspoloživo, isporuka odmah u trgovini
   @availability_in_stock 1
 
@@ -15,11 +21,25 @@ defmodule ExNabava do
   # Raspoloživost potrebno provjeriti / Nije raspoloživo
   @availability_out_of_stock 4
 
+  def availability_in_stock, do: @availability_in_stock
+  def availability_delayed, do: @availability_delayed
+  def availability_in_arrival, do: @availability_in_arrival
+  def availability_out_of_stock, do: @availability_out_of_stock
+
   @doc """
   Returns search results.
   """
   def search(query, page, page_size, price_from, price_to, availability) do
-    # TODO
+    qs = %{
+      q: query,
+      page: page,
+      itemsByPage: page_size,
+      priceFrom: price_from,
+      priceTo: price_to,
+      availability: Enum.join(availability, ",")
+    }
+
+    IO.puts(api_url("search") <> "?" <> URI.encode_query(qs))
   end
 
   @cache_max_age_in_seconds 24 * 60 * 60
@@ -48,6 +68,7 @@ defmodule ExNabava do
           |> Map.new(fn s ->
             {s["id"],
              %{
+               id: s["id"],
                name: s["name"],
                logo: s["logo"],
                homepage: s["homepage"],
