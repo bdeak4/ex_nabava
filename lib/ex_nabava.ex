@@ -16,27 +16,53 @@ defmodule ExNabava do
   @availability_delayed 2
 
   # U dolasku, po narudžbi
-  @availability_in_arrival 3
+  @availability_on_order 3
 
-  # Raspoloživost potrebno provjeriti / Nije raspoloživo
+  # Nije raspoloživo
   @availability_out_of_stock 4
 
   def availability_in_stock, do: @availability_in_stock
   def availability_delayed, do: @availability_delayed
-  def availability_in_arrival, do: @availability_in_arrival
+  def availability_on_order, do: @availability_on_order
   def availability_out_of_stock, do: @availability_out_of_stock
+
+  # Jeftiniji prvo
+  @order_cheaper_first 2
+
+  # Skuplji prvo
+  @order_cheaper_last 3
+
+  # Relevantniji prvo
+  @order_relevant_first 0
+
+  # Relevantniji zadnji
+  @order_relevant_last 1
+
+  # Naziv A-Z
+  @order_a_to_z 6
+
+  # Naziv Z-A
+  @order_z_to_a 7
+
+  def order_cheaper_first, do: @order_cheaper_first
+  def order_cheaper_last, do: @order_cheaper_last
+  def order_relevant_first, do: @order_relevant_first
+  def order_relevant_last, do: @order_relevant_last
+  def order_a_to_z, do: @order_a_to_z
+  def order_z_to_a, do: @order_z_to_a
 
   @doc """
   Returns search results.
   """
-  def search(query, page, page_size, price_from, price_to, availability) do
+  def search(query, page, page_size, price_from, price_to, availability, order) do
     qs = %{
       q: query,
       page: page,
       itemsByPage: page_size,
       priceFrom: price_from,
       priceTo: price_to,
-      availability: Enum.join(availability, ",")
+      availability: Enum.join(availability, ","),
+      order: order
     }
 
     IO.puts(api_url("search") <> "?" <> URI.encode_query(qs))
