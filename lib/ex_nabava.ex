@@ -3,72 +3,80 @@ defmodule ExNabava do
   Documentation for `ExNabava`.
   """
 
-  @doc """
-  ...
-  """
-  def store_products() do
-  end
+  def const,
+    do: %{
+      cache_max_age_in_seconds: 24 * 60 * 60,
+      categories_all: -1,
+      price_from_min: -1,
+      price_to_max: 99999,
 
-  # Raspoloživo, isporuka odmah u trgovini
-  @availability_in_stock 1
+      # Raspoloživo, isporuka odmah u trgovini
+      availability_in_stock: 1,
+      # Raspoloživo, isporuka do 2 dana po uplati
+      availability_delayed: 2,
+      # U dolasku, po narudžbi
+      availability_on_order: 3,
+      # Nije raspoloživo
+      availability_out_of_stock: 4,
 
-  # Raspoloživo, isporuka do 2 dana po uplati
-  @availability_delayed 2
-
-  # U dolasku, po narudžbi
-  @availability_on_order 3
-
-  # Nije raspoloživo
-  @availability_out_of_stock 4
-
-  def availability_in_stock, do: @availability_in_stock
-  def availability_delayed, do: @availability_delayed
-  def availability_on_order, do: @availability_on_order
-  def availability_out_of_stock, do: @availability_out_of_stock
-
-  # Jeftiniji prvo
-  @order_cheaper_first 2
-
-  # Skuplji prvo
-  @order_cheaper_last 3
-
-  # Relevantniji prvo
-  @order_relevant_first 0
-
-  # Relevantniji zadnji
-  @order_relevant_last 1
-
-  # Naziv A-Z
-  @order_a_to_z 6
-
-  # Naziv Z-A
-  @order_z_to_a 7
-
-  def order_cheaper_first, do: @order_cheaper_first
-  def order_cheaper_last, do: @order_cheaper_last
-  def order_relevant_first, do: @order_relevant_first
-  def order_relevant_last, do: @order_relevant_last
-  def order_a_to_z, do: @order_a_to_z
-  def order_z_to_a, do: @order_z_to_a
+      # Jeftiniji prvo
+      order_cheaper_first: 2,
+      # Skuplji prvo
+      order_cheaper_last: 3,
+      # Relevantniji prvo
+      order_relevant_first: 0,
+      # Relevantniji zadnji
+      order_relevant_last: 1,
+      # Naziv A-Z
+      order_a_to_z: 6,
+      # Naziv Z-A
+      order_z_to_a: 7
+    }
 
   @doc """
-  Returns search results.
+  Returns offer search results.
   """
-  def search(query, page, page_size, price_from, price_to, availability, order) do
+  def search_offers(
+        query,
+        page,
+        page_size,
+        category_id,
+        price_from,
+        price_to,
+        availability,
+        order
+      ) do
     qs = %{
       q: query,
       page: page,
       itemsByPage: page_size,
-      priceFrom: price_from,
-      priceTo: price_to,
       availability: Enum.join(availability, ","),
       order: order
     }
 
+    qs =
+      if category_id != const().categories_all do
+        Map.put(qs, :category, category_id)
+      else
+        qs
+      end
+
+    qs =
+      if price_from != const().price_from_min do
+        Map.put(qs, :priceFrom, price_from)
+      else
+        qs
+      end
+
+    qs =
+      if price_to != const().price_to_max do
+        Map.put(qs, :priceTo, price_to)
+      else
+        qs
+      end
+
     IO.puts(api_url("search") <> "?" <> URI.encode_query(qs))
   end
-
-  @cache_max_age_in_seconds 24 * 60 * 60
 
   @doc """
   Returns (cached) list of stores.
@@ -78,7 +86,7 @@ defmodule ExNabava do
       date_modified = Agent.get(:stores_modified, & &1)
       cache_age_in_seconds = DateTime.diff(DateTime.utc_now(), date_modified)
 
-      if cache_age_in_seconds > @cache_max_age_in_seconds do
+      if cache_age_in_seconds > const().cache_max_age_in_seconds do
         exit("cache outdated")
       end
 
