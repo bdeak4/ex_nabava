@@ -75,7 +75,95 @@ defmodule ExNabava do
         qs
       end
 
-    IO.puts(api_url("search") <> "?" <> URI.encode_query(qs))
+    (api_url("search") <> "?" <> URI.encode_query(qs))
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> Map.get("searchResults")
+  end
+
+  @doc """
+  Returns product search results.
+  """
+  def search_products(query, page_size) do
+    qs = %{
+      q: query,
+      r: page_size
+    }
+
+    (api_url("search/autocomplete") <> "?" <> URI.encode_query(qs))
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> Map.get("data")
+    |> Enum.filter(fn p -> Map.get(p, "type") == 2 end)
+  end
+
+  @doc """
+  Returns category search results.
+  """
+  def search_categories(query, page_size) do
+    qs = %{
+      q: query,
+      r: page_size
+    }
+
+    (api_url("search/autocomplete") <> "?" <> URI.encode_query(qs))
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> Map.get("data")
+    |> Enum.filter(fn p -> Map.get(p, "type") == 3 end)
+  end
+
+  @doc """
+  Returns product info and offers.
+  """
+  def product(id) do
+    (api_url("product") <> "/#{id}")
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> Map.get("product")
+  end
+
+  @doc """
+  Returns products linked to product id.
+  """
+  def linked_products(id) do
+    (api_url("product") <> "/#{id}/linkedproducts")
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> Map.get("linkedProductsItems")
+  end
+
+  @doc """
+  Returns (cached) list of categories.
+  """
+  def categories do
+    try do
+      date_modified = Agent.get(:categories_modified, & &1)
+      cache_age_in_seconds = DateTime.diff(DateTime.utc_now(), date_modified)
+
+      if cache_age_in_seconds > const().cache_max_age_in_seconds do
+        exit("cache outdated")
+      end
+
+      Agent.get(:categories, & &1)
+    catch
+      :exit, _ ->
+        categories =
+          api_url("categories")
+          |> HTTPoison.get!()
+          |> Map.get(:body)
+          |> Jason.decode!()
+          |> Map.get("categories")
+
+        Agent.start_link(fn -> categories end, name: :categories)
+        Agent.start_link(fn -> DateTime.utc_now() end, name: :categories_modified)
+        categories
+    end
   end
 
   @doc """
