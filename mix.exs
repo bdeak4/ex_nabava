@@ -7,10 +7,12 @@ defmodule ExNabava.MixProject do
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      description: description(),
       package: package(),
       deps: deps(),
-      source_url: "https://github.com/bdeak4/ex_nabava"
+      name: "ExNabava",
+      description: "ExNabava is unofficial elixir lib for accessing nabava.net public data.",
+      source_url: "https://github.com/bdeak4/ex_nabava",
+      docs: docs()
     ]
   end
 
@@ -32,14 +34,21 @@ defmodule ExNabava.MixProject do
     ]
   end
 
-  defp description() do
-    "ExNabava is unofficial elixir lib for accessing nabava.net public data."
-  end
-
   defp package() do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/bdeak4/ex_nabava"}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+        "README.md",
+        "LICENSE"
+      ],
+      source_ref: "master"
     ]
   end
 end
