@@ -1,6 +1,6 @@
 # ExNabava
 
-**TODO: Add description**
+ExNabava is unofficial elixir lib for accessing nabava.net public data.
 
 ## Installation
 

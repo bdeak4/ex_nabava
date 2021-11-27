@@ -1,6 +1,6 @@
 defmodule ExNabava do
   @moduledoc """
-  Documentation for `ExNabava`.
+  ExNabava is unofficial elixir lib for accessing nabava.net public data.
   """
 
   def const,
