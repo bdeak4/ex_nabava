@@ -8,11 +8,11 @@ defmodule ExNabavaTest do
         "playstation",
         1,
         10,
-        ExNabava.const().categories_all,
-        ExNabava.const().price_from_min,
-        ExNabava.const().price_to_max,
-        [ExNabava.const().availability_in_stock, ExNabava.const().availability_delayed],
-        ExNabava.const().order_cheaper_first
+        ExNabava.const(:categories_all),
+        ExNabava.const(:price_from_min),
+        ExNabava.const(:price_to_max),
+        [ExNabava.const(:availability_in_stock), ExNabava.const(:availability_delayed)],
+        ExNabava.const(:order_cheaper_first)
       )
 
     assert length(offers["items"]) > 0
@@ -54,7 +54,7 @@ defmodule ExNabavaTest do
   end
 
   test "linked_products" do
-    linked_products = ExNabava.linked_products()
+    linked_products = ExNabava.linked_products(11_895_295)
 
     assert length(linked_products) > 0
     assert Map.has_key?(Enum.at(linked_products, 0), "id")
