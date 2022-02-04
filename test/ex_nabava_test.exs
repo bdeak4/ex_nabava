@@ -12,7 +12,7 @@ defmodule ExNabavaTest do
         ExNabava.const(:price_from_min),
         ExNabava.const(:price_to_max),
         [ExNabava.const(:availability_in_stock), ExNabava.const(:availability_delayed)],
-        ExNabava.const(:order_cheaper_first)
+        ExNabava.const(:sort_cheaper_first)
       )
 
     assert length(offers["items"]) > 0
@@ -66,6 +66,7 @@ defmodule ExNabavaTest do
   test "categories" do
     categories = ExNabava.categories()
 
+    assert length(categories) > 0
     assert Map.has_key?(Enum.at(categories, 0), "id")
     assert Map.has_key?(Enum.at(categories, 0), "name")
     assert Map.has_key?(Enum.at(categories, 0), "image")
@@ -73,11 +74,11 @@ defmodule ExNabavaTest do
 
   test "stores" do
     stores = ExNabava.stores()
-    assert length(Map.keys(stores)) > 0
-    assert Map.has_key?(stores[List.first(Map.keys(stores))], :id)
-    assert Map.has_key?(stores[List.first(Map.keys(stores))], :name)
-    assert Map.has_key?(stores[List.first(Map.keys(stores))], :logo)
-    assert Map.has_key?(stores[List.first(Map.keys(stores))], :homepage)
-    assert Map.has_key?(stores[List.first(Map.keys(stores))], :emails)
+
+    assert length(stores) > 0
+    assert Map.has_key?(Enum.at(stores, 0), "id")
+    assert Map.has_key?(Enum.at(stores, 0), "name")
+    assert Map.has_key?(Enum.at(stores, 0), "logo")
+    assert Map.has_key?(Enum.at(stores, 0), "homepage")
   end
 end
