@@ -16,12 +16,12 @@ defmodule ExNabava do
   - `:availability_delayed` (Raspoloživo, isporuka do 2 dana po uplati)
   - `:availability_on_order` (U dolasku, po narudžbi)
   - `:availability_out_of_stock` (Nije raspoloživo)
-  - `:order_cheaper_first` (Jeftiniji prvo)
-  - `:order_cheaper_last` (Skuplji prvo)
-  - `:order_relevant_first` (Relevantniji prvo)
-  - `:order_relevant_last` (Relevantniji zadnji)
-  - `:order_a_to_z` (Naziv A-Z)
-  - `:order_z_to_a` (Naziv Z-A)
+  - `:sort_cheaper_first` (Jeftiniji prvo)
+  - `:sort_cheaper_last` (Skuplji prvo)
+  - `:sort_relevant_first` (Relevantniji prvo)
+  - `:sort_relevant_last` (Relevantniji zadnji)
+  - `:sort_a_to_z` (Naziv A-Z)
+  - `:sort_z_to_a` (Naziv Z-A)
   """
   def const(:cache_max_age_in_seconds), do: 24 * 60 * 60
   def const(:categories_all), do: -1
@@ -31,12 +31,12 @@ defmodule ExNabava do
   def const(:availability_delayed), do: 2
   def const(:availability_on_order), do: 3
   def const(:availability_out_of_stock), do: 4
-  def const(:order_cheaper_first), do: 2
-  def const(:order_cheaper_last), do: 3
-  def const(:order_relevant_first), do: 0
-  def const(:order_relevant_last), do: 1
-  def const(:order_a_to_z), do: 6
-  def const(:order_z_to_a), do: 7
+  def const(:sort_cheaper_first), do: 2
+  def const(:sort_cheaper_last), do: 3
+  def const(:sort_relevant_first), do: 0
+  def const(:sort_relevant_last), do: 1
+  def const(:sort_a_to_z), do: 6
+  def const(:sort_z_to_a), do: 7
 
   @doc """
   Returns offer search results.
@@ -48,42 +48,21 @@ defmodule ExNabava do
         category_id,
         price_from,
         price_to,
-        availability,
-        order
+        availabilities,
+        sort
       ) do
-    qs = %{
-      q: query,
-      page: page,
-      itemsByPage: page_size,
-      availability: Enum.join(availability, ","),
-      order: order
-    }
-
     qs =
-      if category_id != const(:categories_all) do
-        Map.put(qs, :category, category_id)
-      else
-        qs
-      end
+      %{q: query}
+      |> maybe_put(:page, page)
+      |> maybe_put(:itemsByPage, page_size)
+      |> maybe_put(:order, sort)
+      |> maybe_put(Enum.any?(availabilities), :availability, Enum.join(availabilities, ","))
+      |> maybe_put(category_id != const(:categories_all), :category, category_id)
+      |> maybe_put(price_from != const(:price_from_min), :priceFrom, price_from)
+      |> maybe_put(price_to != const(:price_to_max), :priceTo, price_to)
+      |> URI.encode_query()
 
-    qs =
-      if price_from != const(:price_from_min) do
-        Map.put(qs, :priceFrom, price_from)
-      else
-        qs
-      end
-
-    qs =
-      if price_to != const(:price_to_max) do
-        Map.put(qs, :priceTo, price_to)
-      else
-        qs
-      end
-
-    (api_url("search") <> "?" <> URI.encode_query(qs))
-    |> HTTPoison.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
+    get_resp("search?" <> qs)
     |> Map.get("searchResults")
   end
 
@@ -91,15 +70,12 @@ defmodule ExNabava do
   Returns product search results.
   """
   def search_products(query, page_size) do
-    qs = %{
-      q: query,
-      r: page_size
-    }
+    qs =
+      %{q: query}
+      |> maybe_put(:r, page_size)
+      |> URI.encode_query()
 
-    (api_url("search/autocomplete") <> "?" <> URI.encode_query(qs))
-    |> HTTPoison.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
+    get_resp("search/autocomplete?" <> qs)
     |> Map.get("data")
     |> Enum.filter(fn p -> Map.get(p, "type") == 2 end)
   end
@@ -108,15 +84,12 @@ defmodule ExNabava do
   Returns category search results.
   """
   def search_categories(query, page_size) do
-    qs = %{
-      q: query,
-      r: page_size
-    }
+    qs =
+      %{q: query}
+      |> maybe_put(:r, page_size)
+      |> URI.encode_query()
 
-    (api_url("search/autocomplete") <> "?" <> URI.encode_query(qs))
-    |> HTTPoison.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
+    get_resp("search/autocomplete?" <> qs)
     |> Map.get("data")
     |> Enum.filter(fn p -> Map.get(p, "type") == 3 end)
   end
@@ -125,10 +98,7 @@ defmodule ExNabava do
   Returns product info and offers.
   """
   def product(id) do
-    (api_url("product") <> "/#{id}")
-    |> HTTPoison.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
+    get_resp("product/#{id}")
     |> Map.get("product")
   end
 
@@ -136,10 +106,7 @@ defmodule ExNabava do
   Returns products linked to product id.
   """
   def linked_products(id) do
-    (api_url("product") <> "/#{id}/linkedproducts")
-    |> HTTPoison.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
+    get_resp("product/#{id}/linkedproducts")
     |> Map.get("linkedProductsItems")
   end
 
@@ -147,74 +114,23 @@ defmodule ExNabava do
   Returns (cached) list of categories.
   """
   def categories do
-    try do
-      date_modified = Agent.get(:categories_modified, & &1)
-      cache_age_in_seconds = DateTime.diff(DateTime.utc_now(), date_modified)
-
-      if cache_age_in_seconds > const(:cache_max_age_in_seconds) do
-        exit("cache outdated")
-      end
-
-      Agent.get(:categories, & &1)
-    catch
-      :exit, _ ->
-        categories =
-          api_url("categories")
-          |> HTTPoison.get!()
-          |> Map.get(:body)
-          |> Jason.decode!()
-          |> Map.get("categories")
-
-        Agent.start_link(fn -> categories end, name: :categories)
-        Agent.start_link(fn -> DateTime.utc_now() end, name: :categories_modified)
-        categories
-    end
+    get_resp("categories")
+    |> Map.get("categories")
   end
 
   @doc """
   Returns (cached) list of stores.
   """
   def stores do
-    try do
-      date_modified = Agent.get(:stores_modified, & &1)
-      cache_age_in_seconds = DateTime.diff(DateTime.utc_now(), date_modified)
+    get_resp("stores")
+    |> Map.get("stores")
+  end
 
-      if cache_age_in_seconds > const(:cache_max_age_in_seconds) do
-        exit("cache outdated")
-      end
-
-      Agent.get(:stores, & &1)
-    catch
-      :exit, _ ->
-        stores =
-          api_url("stores")
-          |> HTTPoison.get!()
-          |> Map.get(:body)
-          |> Jason.decode!()
-          |> Map.get("stores")
-          |> Map.new(fn s ->
-            {s["id"],
-             %{
-               id: s["id"],
-               name: s["name"],
-               logo: s["logo"],
-               homepage: s["homepage"],
-               emails:
-                 if s["locations"] do
-                   Enum.filter(
-                     Enum.map(s["locations"], fn l -> l["email"] end),
-                     fn e -> e != nil end
-                   )
-                 else
-                   []
-                 end
-             }}
-          end)
-
-        Agent.start_link(fn -> stores end, name: :stores)
-        Agent.start_link(fn -> DateTime.utc_now() end, name: :stores_modified)
-        stores
-    end
+  defp get_resp(path) do
+    api_url(path)
+    |> HTTPoison.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
   end
 
   defp api_url(path) do
@@ -224,4 +140,9 @@ defmodule ExNabava do
   defp device_id do
     Application.fetch_env!(:ex_nabava, :device_id)
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+  defp maybe_put(map, false, _key, _value), do: map
+  defp maybe_put(map, true, key, value), do: maybe_put(map, key, value)
 end
