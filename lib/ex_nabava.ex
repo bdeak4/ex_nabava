@@ -97,6 +97,8 @@ defmodule ExNabava do
   @doc """
   Returns product info and offers.
   """
+  def product(nil), do: %{}
+
   def product(id) do
     get_resp("product/#{id}")
     |> Map.get("product")
