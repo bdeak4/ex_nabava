@@ -39,7 +39,7 @@ defmodule ExNabava do
   def const(:sort_z_to_a), do: 7
 
   @doc """
-  Returns offer search results.
+  Returns offer search results
   """
   def search_offers(
         query,
@@ -67,7 +67,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns product search results.
+  Returns product search results
   """
   def search_products(query, page_size) do
     qs =
@@ -81,7 +81,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns category search results.
+  Returns category search results
   """
   def search_categories(query, page_size) do
     qs =
@@ -95,7 +95,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns product info and offers.
+  Returns product info and offers
   """
   def product(nil), do: %{}
 
@@ -105,7 +105,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns products linked to product id.
+  Returns products linked to product id
   """
   def linked_products(id) do
     get_resp("product/#{id}/linkedproducts")
@@ -113,7 +113,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns (cached) list of categories.
+  Returns list of categories
   """
   def categories do
     get_resp("categories")
@@ -121,7 +121,7 @@ defmodule ExNabava do
   end
 
   @doc """
-  Returns (cached) list of stores.
+  Returns list of stores
   """
   def stores do
     get_resp("stores")
