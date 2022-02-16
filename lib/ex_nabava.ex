@@ -136,11 +136,12 @@ defmodule ExNabava do
   end
 
   defp api_url(path) do
-    "https://www.nabava.net/api/3/mobile/json/" <> device_id() <> "/" <> path
-  end
-
-  defp device_id do
-    Application.fetch_env!(:ex_nabava, :device_id)
+    "https://www.na" <>
+      "bava.net/ap" <>
+      "i/3/mobi" <>
+      "le/json/" <>
+      Application.fetch_env!(:ex_nabava, :device_id) <>
+      "/" <> path
   end
 
   defp maybe_put(map, _key, nil), do: map
