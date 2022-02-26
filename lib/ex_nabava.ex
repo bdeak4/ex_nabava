@@ -8,7 +8,6 @@ defmodule ExNabava do
 
   List of constants:
 
-  - `:cache_max_age_in_seconds`
   - `:categories_all`
   - `:price_from_min`
   - `:price_to_max`
@@ -23,7 +22,6 @@ defmodule ExNabava do
   - `:sort_a_to_z` (Naziv A-Z)
   - `:sort_z_to_a` (Naziv Z-A)
   """
-  def const(:cache_max_age_in_seconds), do: 24 * 60 * 60
   def const(:categories_all), do: -1
   def const(:price_from_min), do: -1
   def const(:price_to_max), do: 99999
@@ -126,6 +124,39 @@ defmodule ExNabava do
   def stores do
     get_resp("stores")
     |> Map.get("stores")
+  end
+
+  @doc """
+  Returns cached list of stores
+  """
+  def stores_cached do
+    try do
+      stores_modified = Agent.get(:stores_modified, & &1)
+      cache_age_in_seconds = DateTime.diff(DateTime.utc_now(), stores_modified)
+      one_day_in_seconds = 60 * 60 * 24
+
+      if cache_age_in_seconds > one_day_in_seconds do
+        exit("cache outdated")
+      end
+
+      Agent.get(:stores, & &1)
+    catch
+      :exit, _ ->
+        stores = stores()
+        Agent.start_link(fn -> stores end, name: :stores)
+        Agent.start_link(fn -> DateTime.utc_now() end, name: :stores_modified)
+        stores
+    end
+  end
+
+  @doc """
+  Returns store info
+  """
+  def store(nil), do: %{}
+
+  def store(id) do
+    stores_cached()
+    |> Enum.find(%{}, fn s -> s["id"] == id end)
   end
 
   defp get_resp(path) do
