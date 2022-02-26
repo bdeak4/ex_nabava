@@ -12,6 +12,8 @@ def deps do
 end
 ```
 
+add `device_id` in [config.exs](config/config.exs)
+
 ## Documentation
 
 <https://hexdocs.pm/ex_nabava>
