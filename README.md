@@ -7,7 +7,7 @@ ExNabava is unofficial elixir lib for accessing nabava.net public data.
 ```elixir
 def deps do
   [
-    {:ex_nabava, "~> 0.3.1"}
+    {:ex_nabava, "~> 0.3.2"}
   ]
 end
 ```
