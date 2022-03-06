@@ -12,7 +12,7 @@ def deps do
 end
 ```
 
-add `device_id` in [config.exs](config/config.exs)
+add `device_id` in [config.exs](https://github.com/bdeak4/ex_nabava/blob/master/config/config.exs)
 
 ## Documentation
 
